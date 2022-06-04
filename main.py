@@ -25,7 +25,6 @@ label_font = pygame.font.Font("freesansbold.ttf", 32)
 medium_font = pygame.font.Font("freesansbold.ttf", 22)
 
 fps = 60
-bpm = 240
 timer = pygame.time.Clock()
 beats = 8
 instruments = 6
@@ -110,6 +109,7 @@ def draw_grid(clicks, beat):
 
 # Main game loop
 def game_loop():
+    bpm = 240
     playing = True
     active_beat = 1
     active_length = 0
@@ -121,7 +121,8 @@ def game_loop():
 
         main_boxes = draw_grid(clicked, active_beat)  # clicked tells draw_grid which boxes to turn on/off
 
-        # Lower menu buttons
+        # Lower menu
+        # Play/Pause button
         play_pause = pygame.draw.rect(screen, gray, [50, HEIGHT - 150, 200, 100], 0, 5)
         play_text = label_font.render('Play/Pause', True, white)
         screen.blit(play_text, (70, HEIGHT - 130))
@@ -130,6 +131,18 @@ def game_loop():
         else:
             play_text_opt = medium_font.render('Paused', True, dark_gray)
         screen.blit(play_text_opt, (70, HEIGHT - 100))
+        # BPM button
+        bpm_rect = pygame.draw.rect(screen, gray, [300, HEIGHT - 150, 200, 100], 5, 5)
+        bpm_text = medium_font.render('Beats Per Min', True, white)
+        screen.blit(bpm_text, (325, HEIGHT - 130))
+        bpm_text2 = label_font.render(f'{bpm}', True, white)
+        screen.blit(bpm_text2, (370, HEIGHT - 100))
+        bpm_add_rect = pygame.draw.rect(screen, gray, [510, HEIGHT - 150, 48, 48], 0, 5)
+        bpm_sub_rect = pygame.draw.rect(screen, gray, [510, HEIGHT - 100, 48, 48], 0, 5)
+        add_text = medium_font.render('+10', True, white)
+        sub_text = medium_font.render('-10', True, white)
+        screen.blit(add_text, (515, HEIGHT - 140))
+        screen.blit(sub_text, (515, HEIGHT - 90))
 
         # Instrument rect buttons for interaction
         instrument_rects = []
@@ -146,18 +159,25 @@ def game_loop():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+            # Music pad buttons pressed
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for i in range(len(main_boxes)):
                     if main_boxes[i][0].collidepoint(event.pos):
                         coords = main_boxes[i][1]
                         # Select a box by making it positive, unselect it by making it negative
                         clicked[coords[1]][coords[0]] *= -1
+            # Menu buttons pressed
             if event.type == pygame.MOUSEBUTTONUP:
+                # Play/Pause button
                 if play_pause.collidepoint(event.pos):
                     if playing:
                         playing = False
                     elif not playing:
                         playing = True
+                elif bpm_add_rect.collidepoint(event.pos):
+                    bpm += 10
+                elif bpm_sub_rect.collidepoint(event.pos):
+                    bpm -= 10
 
         beat_length = (fps * 60) // bpm
         if playing:
