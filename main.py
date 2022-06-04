@@ -14,6 +14,7 @@ HEIGHT = 800
 black = (0, 0, 0)
 white = (255, 255, 255)
 gray = (128, 128, 128)
+dark_gray = (50, 50, 50)
 green = (0, 255, 0)
 gold = (212, 175, 55)
 blue = (0, 255, 255)
@@ -21,6 +22,7 @@ blue = (0, 255, 255)
 screen = pygame.display.set_mode([WIDTH, HEIGHT])
 pygame.display.set_caption("MusicPad")
 label_font = pygame.font.Font("freesansbold.ttf", 32)
+medium_font = pygame.font.Font("freesansbold.ttf", 22)
 
 fps = 60
 bpm = 240
@@ -32,9 +34,11 @@ instruments = 6
 hi_hat = mixer.Sound('sounds/tr808-hi hat.wav')
 snare = mixer.Sound('sounds/tr808-snare.wav')
 kick = mixer.Sound('sounds/tr808-kick.wav')
-crash = mixer.Sound('sounds/tr808-crash.wav')
+Cowbell = mixer.Sound('sounds/tr505-cowb-h.wav')
 clap = mixer.Sound('sounds/tr808-clap.wav')
-tom = mixer.Sound('sounds/tr808-tom.wav')
+tom = mixer.Sound('sounds/tr505-tom-l.wav')
+
+pygame.mixer.set_num_channels(instruments * 3)  # Add more usable channels to avoid interference
 
 
 # Create a list of beats/instruments that are all -1 (unclicked) then
@@ -42,6 +46,7 @@ tom = mixer.Sound('sounds/tr808-tom.wav')
 clicked = [[-1 for _ in range(beats)] for _ in range(instruments)]
 
 
+# Play default tr 808 drum samples
 def play_notes(beat):
     for i in range(len(clicked)):
         if clicked[i][beat] == 1:
@@ -52,7 +57,7 @@ def play_notes(beat):
             if i == 2:
                 kick.play()
             if i == 3:
-                crash.play()
+                Cowbell.play()
             if i == 4:
                 clap.play()
             if i == 5:
@@ -70,9 +75,9 @@ def draw_grid(clicks, beat):
     screen.blit(hi_hat_text, (30, 30))
     snare_text = label_font.render('Snare', True, white)
     screen.blit(snare_text, (30, 130))
-    kick_text = label_font.render('Bass', True, white)
+    kick_text = label_font.render('Kick', True, white)
     screen.blit(kick_text, (30, 230))
-    crash_text = label_font.render('Crash', True, white)
+    crash_text = label_font.render('Cowbell', True, white)
     screen.blit(crash_text, (30, 330))
     clap_text = label_font.render('Clap', True, white)
     screen.blit(clap_text, (30, 430))
@@ -82,7 +87,7 @@ def draw_grid(clicks, beat):
     # Draw borders around instrument text
     for i in range(instruments):
         pygame.draw.line(screen, gray, (0, (i * 100) + 100), (200, (i * 100) + 100), 5)
-
+    # Draw music pad squares
     for i in range(beats):
         for j in range(instruments):
             if clicks[j][i] == -1:
@@ -106,7 +111,7 @@ def draw_grid(clicks, beat):
 # Main game loop
 def game_loop():
     playing = True
-    active_b = 1
+    active_beat = 1
     active_length = 0
     beat_changed = True
     run = True
@@ -114,11 +119,27 @@ def game_loop():
         timer.tick(fps)
         screen.fill(black)  # background
 
-        main_boxes = draw_grid(clicked, active_b)  # clicked tells draw_grid which boxes to turn on/off
+        main_boxes = draw_grid(clicked, active_beat)  # clicked tells draw_grid which boxes to turn on/off
+
+        # Lower menu buttons
+        play_pause = pygame.draw.rect(screen, gray, [50, HEIGHT - 150, 200, 100], 0, 5)
+        play_text = label_font.render('Play/Pause', True, white)
+        screen.blit(play_text, (70, HEIGHT - 130))
+        if playing:
+            play_text_opt = medium_font.render('Playing', True, dark_gray)
+        else:
+            play_text_opt = medium_font.render('Paused', True, dark_gray)
+        screen.blit(play_text_opt, (70, HEIGHT - 100))
+
+        # Instrument rect buttons for interaction
+        instrument_rects = []
+        for i in range(instruments):
+            rect = pygame.rect.Rect((0, i * 100), (200, 100))
+            instrument_rects.append(rect)
 
         # Play instruments on each beat
         if beat_changed:
-            play_notes(active_b)
+            play_notes(active_beat)
             beat_changed = False
 
         # Event handling
@@ -131,6 +152,12 @@ def game_loop():
                         coords = main_boxes[i][1]
                         # Select a box by making it positive, unselect it by making it negative
                         clicked[coords[1]][coords[0]] *= -1
+            if event.type == pygame.MOUSEBUTTONUP:
+                if play_pause.collidepoint(event.pos):
+                    if playing:
+                        playing = False
+                    elif not playing:
+                        playing = True
 
         beat_length = (fps * 60) // bpm
         if playing:
@@ -138,11 +165,11 @@ def game_loop():
                 active_length += 1
             else:
                 active_length = 0
-                if active_b < (beats - 1):
-                    active_b += 1
+                if active_beat < (beats - 1):
+                    active_beat += 1
                     beat_changed = True
                 else:
-                    active_b = 0
+                    active_beat = 0
                     beat_changed = True
 
         pygame.display.flip()
