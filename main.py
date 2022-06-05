@@ -3,6 +3,8 @@
 # Final Project
 
 import simpleaudio as sa
+import sounddevice as sd
+from scipy.io import wavfile
 import pygame
 from pygame import mixer
 pygame.init()
@@ -25,29 +27,63 @@ label_font = pygame.font.Font("freesansbold.ttf", 32)
 medium_font = pygame.font.Font("freesansbold.ttf", 22)
 
 FPS = 60
+SAMPLERATE = 48000
+DURATION = 1
 TIMER = pygame.time.Clock()
 BEATS = 8
 BPM = 240
-INSTRUMENTS = 6
+NUM_INST = 6
+INSTRUMENTS = []
 
-# Instrument Sounds
+# Default instrument Sounds
 hi_hat = mixer.Sound('sounds/tr808-hi hat.wav')
+INSTRUMENTS.append(hi_hat)
 snare = mixer.Sound('sounds/tr808-snare.wav')
+INSTRUMENTS.append(snare)
 kick = mixer.Sound('sounds/tr808-kick.wav')
-Cowbell = mixer.Sound('sounds/tr505-cowb-h.wav')
+INSTRUMENTS.append(kick)
+cowbell = mixer.Sound('sounds/tr505-cowb-h.wav')
+INSTRUMENTS.append(cowbell)
 clap = mixer.Sound('sounds/tr808-clap.wav')
+INSTRUMENTS.append(clap)
 tom = mixer.Sound('sounds/tr505-tom-l.wav')
+INSTRUMENTS.append(tom)
 
-pygame.mixer.set_num_channels(INSTRUMENTS * 3)  # Add more usable channels to avoid interference
+pygame.mixer.set_num_channels(NUM_INST * 3)  # Add more usable channels to avoid interference
 
 
 # Create a list of beats/instruments that are all -1 (unclicked) then
 # updated in main loop if clicked (changed to +1)
-clicked = [[-1 for _ in range(BEATS)] for _ in range(INSTRUMENTS)]
+clicked = [[-1 for _ in range(BEATS)] for _ in range(NUM_INST)]
 
 # Instruments selected by user in left instrument menu
 # All are inactive for recording to start, and have default instrument selected
-active_list = [-1 for _ in range(INSTRUMENTS)]
+active_list = [1 for _ in range(NUM_INST)]
+
+
+# Record audio for audio1 - audio5 to replace default instrument sound
+def record(audio_num):
+    audio_track = 'sounds/audio' + str(audio_num + 1) + '.wav'
+    mic_input = sd.rec(frames=int(DURATION * SAMPLERATE), samplerate=SAMPLERATE, channels=1)
+    sd.wait()
+    wavfile.write(audio_track, SAMPLERATE, mic_input)
+
+
+# Record audio to replace instrument sound
+def change_notes(inst_num):
+    record(inst_num)
+    if inst_num == 0:  # Instrument 1 (Hi Hat default)
+        INSTRUMENTS[i] = mixer.Sound('sounds/audio1.wav')
+    if inst_num == 1:  # Instrument 1 (Hi Hat default)
+        INSTRUMENTS[i] = mixer.Sound('sounds/audio2.wav')
+    if inst_num == 2:  # Instrument 1 (Hi Hat default)
+        INSTRUMENTS[i] = mixer.Sound('sounds/audio3.wav')
+    if inst_num == 3:  # Instrument 1 (Hi Hat default)
+        INSTRUMENTS[i] = mixer.Sound('sounds/audio4.wav')
+    if inst_num == 4:  # Instrument 1 (Hi Hat default)
+        INSTRUMENTS[i] = mixer.Sound('sounds/audio5.wav')
+    if inst_num == 5:  # Instrument 1 (Hi Hat default)
+        INSTRUMENTS[i] = mixer.Sound('sounds/audio6.wav')
 
 
 # Play default tr 808 drum samples
@@ -55,60 +91,72 @@ def play_notes(beat):
     for i in range(len(clicked)):
         if clicked[i][beat] == 1:
             if i == 0:
-                hi_hat.play()
+                INSTRUMENTS[0].play()
             if i == 1:
-                snare.play()
+                INSTRUMENTS[1].play()
             if i == 2:
-                kick.play()
+                INSTRUMENTS[2].play()
             if i == 3:
-                Cowbell.play()
+                INSTRUMENTS[3].play()
             if i == 4:
-                clap.play()
+                INSTRUMENTS[4].play()
             if i == 5:
-                tom.play()
+                INSTRUMENTS[5].play()
 
 
-def draw_grid(clicks, beat):
+def draw_grid(clicks, beat, active_inst):
     left_box = pygame.draw.rect(screen, gray, [0, 0, 200, HEIGHT-200], 5)
     bottom_box = pygame.draw.rect(screen, gray, [0, HEIGHT-200, WIDTH, 200], 5)
     grid_boxes = []
     colors = [gray, white, gray]
 
     # Draw instrument text
-    hi_hat_text = label_font.render('Hi Hat', True, white)
-    screen.blit(hi_hat_text, (30, 30))
-    snare_text = label_font.render('Snare', True, white)
-    screen.blit(snare_text, (30, 130))
-    kick_text = label_font.render('Kick', True, white)
-    screen.blit(kick_text, (30, 230))
-    crash_text = label_font.render('Cowbell', True, white)
-    screen.blit(crash_text, (30, 330))
-    clap_text = label_font.render('Clap', True, white)
-    screen.blit(clap_text, (30, 430))
-    floor_tom_text = label_font.render('Floor Tom', True, white)
-    screen.blit(floor_tom_text, (30, 530))
+    if active_inst[0] == 1:
+        screen.blit(label_font.render('Hi Hat', True, colors[active_inst[0]]), (30, 30))
+    elif active_inst[0] == -1:
+        screen.blit(label_font.render('REC 1', True, colors[active_inst[0]]), (30, 30))
+    if active_inst[1] == 1:
+        screen.blit(label_font.render('Snare', True, colors[active_inst[1]]), (30, 130))
+    elif active_inst[1] == -1:
+        screen.blit(label_font.render('REC 2', True, colors[active_inst[1]]), (30, 130))
+    if active_inst[2] == 1:
+        screen.blit(label_font.render('Kick', True, colors[active_inst[2]]), (30, 230))
+    elif active_inst[2] == -1:
+        screen.blit(label_font.render('REC 3', True, colors[active_inst[2]]), (30, 230))
+    if active_inst[3] == 1:
+        screen.blit(label_font.render('Cowbell', True, colors[active_inst[3]]), (30, 330))
+    elif active_inst[3] == -1:
+        screen.blit(label_font.render('REC 4', True, colors[active_inst[3]]), (30, 330))
+    if active_inst[4] == 1:
+        screen.blit(label_font.render('Clap', True, colors[active_inst[4]]), (30, 430))
+    elif active_inst[4] == -1:
+        screen.blit(label_font.render('REC 5', True, colors[active_inst[4]]), (30, 430))
+    if active_inst[5] == 1:
+        screen.blit(label_font.render('Floor Tom', True, colors[active_inst[5]]), (30, 530))
+    elif active_inst[5] == -1:
+        screen.blit(label_font.render('REC 6', True, colors[active_inst[5]]), (30, 530))
 
     # Draw borders around instrument text
-    for i in range(INSTRUMENTS):
+    for i in range(NUM_INST):
         pygame.draw.line(screen, gray, (0, (i * 100) + 100), (200, (i * 100) + 100), 5)
     # Draw music pad squares
     for i in range(BEATS):
-        for j in range(INSTRUMENTS):
+        for j in range(NUM_INST):
             if clicks[j][i] == -1:
                 color = gray
             else:
                 color = green
             rect = pygame.draw.rect(screen, color, [i * ((WIDTH - 200) // BEATS) + 205, (j * 100) + 5,
                                                     ((WIDTH - 200) // BEATS) - 10,
-                                                    ((HEIGHT - 200) // INSTRUMENTS) - 10], 0, 5)
+                                                    ((HEIGHT - 200) // NUM_INST) - 10], 0, 5)
             pygame.draw.rect(screen, gold, [i * ((WIDTH - 200) // BEATS) + 200, (j * 100), ((WIDTH - 200) // BEATS),
-                                            ((HEIGHT - 200) // INSTRUMENTS)], 5, 5)
+                                            ((HEIGHT - 200) // NUM_INST)], 5, 5)
             pygame.draw.rect(screen, black, [i * ((WIDTH - 200) // BEATS) + 200, (j * 100), ((WIDTH - 200) // BEATS),
-                                             ((HEIGHT - 200) // INSTRUMENTS)], 2, 5)
+                                             ((HEIGHT - 200) // NUM_INST)], 2, 5)
 
             grid_boxes.append((rect, (i, j)))  # Return rectangle for each beat & coordinate for collision detection
             active_col = pygame.draw.rect(screen, blue, [beat * ((WIDTH - 200) // BEATS) + 200, 0,
-                                                         ((WIDTH - 200) // BEATS), INSTRUMENTS * 100], 5, 3)
+                                                         ((WIDTH - 200) // BEATS), NUM_INST * 100], 5, 3)
     return grid_boxes
 
 
@@ -127,7 +175,7 @@ while run:
     TIMER.tick(FPS)
     screen.fill(black)  # background
 
-    main_boxes = draw_grid(clicked, active_beat)  # clicked tells draw_grid which boxes to turn on/off
+    main_boxes = draw_grid(clicked, active_beat, active_list)  # clicked tells draw_grid which boxes to turn on/off
 
     # Lower menu
     # Play/Pause button
@@ -166,7 +214,7 @@ while run:
 
     # Invisible instrument rect buttons for interaction
     instrument_rects = []
-    for i in range(INSTRUMENTS):
+    for i in range(NUM_INST):
         rect = pygame.rect.Rect((0, i * 100), (200, 100))
         instrument_rects.append(rect)
 
@@ -208,10 +256,27 @@ while run:
                 BEATS -= 1
                 for i in range(len(clicked)):
                     clicked[i].pop(-1)  # Remove right-most column of pads
-            # Instrument button pressed
+            ''' Instrument button pressed '''
             for i in range(len(instrument_rects)):
                 if instrument_rects[i].collidepoint(event.pos):
-                    active_list[i] *= i
+                    active_list[i] *= -1  # turn on/off
+                    # If original sound is turned off, new sound recorded and played instead
+                    if active_list[i] == -1:
+                        change_notes(i)
+                    # If recording turned off, go back to original instrument sound
+                    else:
+                        if i == 0:
+                            INSTRUMENTS[i] = mixer.Sound('sounds/tr808-hi hat.wav')
+                        if i == 1:
+                            INSTRUMENTS[i] = mixer.Sound('sounds/tr808-snare.wav')
+                        if i == 2:
+                            INSTRUMENTS[i] = mixer.Sound('sounds/tr808-kick.wav')
+                        if i == 3:
+                            INSTRUMENTS[i] = mixer.Sound('sounds/tr505-cowb-h.wav')
+                        if i == 4:
+                            INSTRUMENTS[i] = mixer.Sound('sounds/tr808-clap.wav')
+                        if i == 5:
+                            INSTRUMENTS[i] = mixer.Sound('sounds/tr505-tom-l.wav')
 
     beat_length = (FPS * 60) // BPM
     if playing:
