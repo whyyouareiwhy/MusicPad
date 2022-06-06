@@ -58,10 +58,10 @@ INST_DEF5_NAME = 'Clap'
 INST_DEF6_NAME = 'Conga'
 
 # Default instrument recording file names to be used if necessary
-INST1_REC = 'audio1.wav'
-
-REC1 = False  # Recording for instrument 1 exists
-REC1_FILT = False  # Recording for instrument 1 pos. is filtered
+# INST1_REC = 'audio1.wav'
+#
+# REC1 = False  # Recording for instrument 1 exists
+# REC1_FILT = False  # Recording for instrument 1 pos. is filtered
 
 pygame.mixer.set_num_channels(NUM_INST * 3)  # Add more usable channels to avoid interference
 
@@ -71,12 +71,6 @@ def set_def_inst():
     for i in range(len(INSTRUMENTS)):
         if i == 0:
             INSTRUMENTS[0] = mixer.Sound(INST_DEF1)
-        # if i == 0 and not REC1:
-        #     print("set_def_inst() i == 0 and not REC1")
-        #     INSTRUMENTS[0] = mixer.Sound(INST_DEF1)
-        # elif i == 0 and REC1:  # audio1.wav must exist because recording happened
-        #     print("set_def_inst() i == 0 and REC1")
-        #     INSTRUMENTS[0] = mixer.Sound('audio1.wav')  # Default recording
         elif i == 1:
             INSTRUMENTS[1] = mixer.Sound(INST_DEF2)
         elif i == 2:
@@ -89,12 +83,23 @@ def set_def_inst():
             INSTRUMENTS[5] = mixer.Sound(INST_DEF6)
 
 
-# Set default sounds for recorded audio
-def set_def_rec():
-    pass
+def set_def_rec(rec_num):
+    print("set_def_rec()")
+    if rec_num == 0:
+        INSTRUMENTS[0] = mixer.Sound('audio1.wav')
+    elif rec_num == 1:
+        INSTRUMENTS[1] = mixer.Sound('audio2.wav')
+    elif rec_num == 2:
+        INSTRUMENTS[2] = mixer.Sound('audio3.wav')
+    elif rec_num == 3:
+        INSTRUMENTS[3] = mixer.Sound('audio4.wav')
+    elif rec_num == 4:
+        INSTRUMENTS[4] = mixer.Sound('audio5.wav')
+    elif re == 5:
+        INSTRUMENTS[5] = mixer.Sound('audio6.wav')
 
 
-def set_filtered_inst():
+def set_reverb_inst():
     inst = ''
     for i in range(len(INSTRUMENTS)):
         if i == 0:
@@ -110,20 +115,71 @@ def set_filtered_inst():
         elif i == 5:
             inst = INST_DEF6
 
-        # print(f"set_filtered_inst() inst {inst}")
-        audio = wave.open(inst)
-        samples = audio.getnframes()
-        data = audio.readframes(samples)
-        audio_as_np_int16 = np.frombuffer(data, dtype=np.int16)
-        filtered_audio = np.clip(audio_as_np_int16, a_min=-8192, a_max=8192)
+        fs, audio = wavfile.read(inst)
+
+        echo_dur = 0.15
+        delay_amp = 0.2
+        delay_samples = round(echo_dur * fs)
+        zero_padding = np.zeros(delay_samples)
+
+        delay_padding = np.concatenate((zero_padding, audio))
+        delayed_audio = np.concatenate((audio, zero_padding))
+        reverb_audio = delayed_audio + delay_amp * delay_padding
+
+        new_inst = inst.replace('.wav', '-rev.wav').replace('sounds/', '')
+        wavfile.write(new_inst, fs, reverb_audio.astype(np.int16))
+        INSTRUMENTS[i] = mixer.Sound(new_inst)
+
+
+def set_sqrwave_inst():
+    inst = ''
+    for i in range(len(INSTRUMENTS)):
+        if i == 0:
+            inst = INST_DEF1
+        elif i == 1:
+            inst = INST_DEF2
+        elif i == 2:
+            inst = INST_DEF3
+        elif i == 3:
+            inst = INST_DEF4
+        elif i == 4:
+            inst = INST_DEF5
+        elif i == 5:
+            inst = INST_DEF6
+
+        fs, audio = wavfile.read(inst)
+        filtered_audio = audio.astype(np.int16)
+        filtered_audio = np.clip(filtered_audio, a_min=-4000, a_max=4000)
         new_inst = inst.replace('.wav', '-filt.wav').replace('sounds/', '')
-        # print(f"new_inst {new_inst}")
-        wavfile.write(new_inst, samples, filtered_audio)
+        wavfile.write(new_inst, fs, filtered_audio)
         INSTRUMENTS[i] = mixer.Sound(new_inst)
 
 
 # Set filtered sounds for recorded audio
-def set_filtered_rec():
+def set_sqrwave_rec(i):
+    inst = ''
+    if i == 1:
+        inst = 'audio1.wav'
+    elif i == 2:
+        inst = 'audio2.wav'
+    elif i == 3:
+        inst = 'audio3.wav'
+    elif i == 4:
+        inst = 'audio4.wav'
+    elif i == 5:
+        inst = 'audio5.wav'
+    elif i == 6:
+        inst = 'audio6.wav'
+
+    fs, audio = wavfile.read(inst)
+    filtered_audio = audio.astype(np.int16)
+    filtered_audio = np.clip(filtered_audio, a_min=-4000, a_max=4000)
+    new_inst = inst.replace('.wav', '-filt.wav')
+    wavfile.write(new_inst, fs, filtered_audio)
+    INSTRUMENTS[i] = mixer.Sound(new_inst)
+
+
+def set_reverb_rec(rec_num):
     pass
 
 
@@ -149,17 +205,10 @@ active_instruments = [1 for _ in range(NUM_INST)]
 # Record audio for audio1 - audio5 to replace default instrument sound
 # If filt-opt is false, use default sounds, if filt-opt true, use filtered audio
 def record(audio_num):
-    # if not filt_opt:
-    #     print('record()')
         audio_track = 'audio' + str(audio_num + 1) + '.wav'
         mic_input = sd.rec(frames=int(DURATION * SAMPLERATE), samplerate=SAMPLERATE, channels=1)
         sd.wait()
         wavfile.write(audio_track, SAMPLERATE, mic_input)
-    # else:
-    #     audio_track = 'audio' + str(audio_num + 1) + '-filt.wav'
-    #     filtered = np.clip(mic_input, a_min=-8192, a_max=8192)
-        # filtered_track = audio_track.replace('.wav', '-filt.wav')
-        # wavfile.write(audio_track, SAMPLERATE, filtered)
 
 
 # Record audio to replace instrument sound
@@ -274,7 +323,7 @@ while run:
     music_pads = draw_grid(clicked, active_beat, active_instruments)
 
     ''' ~ Lower menu buttons ~ '''
-    # Play/Pause button
+    # Draw Play/Pause button
     play_pause = pygame.draw.rect(screen, roland_red, [50, HEIGHT - 150, 200, 100], 0, 5)
     play_text = label_font2.render('Play/Pause', True, roland_yellow)
     screen.blit(play_text, (70, HEIGHT - 130))
@@ -283,7 +332,7 @@ while run:
     else:
         play_text_opt = medium_font.render('Paused', True, dark_gray)
     screen.blit(play_text_opt, (105, HEIGHT - 90))
-    # BPM button
+    # Draw BPM button
     bpm_rect = pygame.draw.rect(screen, roland_yellow, [300, HEIGHT - 150, 200, 100], 5, 5)
     bpm_text = medium_font.render('Beats Per Min', True, white)
     screen.blit(bpm_text, (325, HEIGHT - 130))
@@ -295,31 +344,31 @@ while run:
     sub_text = medium_font.render('-10', True, roland_yellow)
     screen.blit(add_text, (515, HEIGHT - 140))
     screen.blit(sub_text, (515, HEIGHT - 90))
-    # Beats button
+    # Draw Beats button
     beats_rect = pygame.draw.rect(screen, roland_yellow, [600, HEIGHT - 150, 200, 100], 5, 5)
     beats_text = medium_font.render('Beats In Loop', True, white)
     screen.blit(beats_text, (625, HEIGHT - 130))
     beats_text2 = label_font.render(f'{BEATS}', True, white)
-    screen.blit(beats_text2, (670, HEIGHT - 100))
+    screen.blit(beats_text2, (690, HEIGHT - 100))
     beats_add_rect = pygame.draw.rect(screen, roland_red, [810, HEIGHT - 150, 48, 48], 0, 5)
     beats_sub_rect = pygame.draw.rect(screen, roland_red, [810, HEIGHT - 100, 48, 48], 0, 5)
     add_text2 = medium_font.render('+1', True, roland_yellow)
     sub_text2 = medium_font.render('-1', True, roland_yellow)
     screen.blit(add_text2, (815, HEIGHT - 140))
     screen.blit(sub_text2, (815, HEIGHT - 90))
-    # Square Wave Filter button
-    filter_rect = pygame.draw.rect(screen, roland_red, [900, HEIGHT - 150, 200, 100], 0, 5)
-    filter_text = label_font2.render('Square Wave', True, roland_yellow)
-    screen.blit(filter_text, (910, HEIGHT - 130))
+    # Draw Square Wave Filter button
+    sq_wave_btn = pygame.draw.rect(screen, roland_red, [900, HEIGHT - 150, 200, 100], 0, 5)
+    sq_wave_text = label_font2.render('Square Wave', True, roland_yellow)
+    screen.blit(sq_wave_text, (910, HEIGHT - 130))
     if filtering:
         filtering_opt = medium_font.render('On', True, dark_gray)
     else:
         filtering_opt = medium_font.render('Off', True, dark_gray)
     screen.blit(filtering_opt, (980, HEIGHT - 90))
-    # Filter button
-    filter2_rect = pygame.draw.rect(screen, roland_red, [1150, HEIGHT - 150, 200, 100], 0, 5)
-    filter2_text = label_font2.render('Filter2', True, roland_yellow)
-    screen.blit(filter2_text, (1200, HEIGHT - 130))
+    # Draw Filter2 button
+    reverb_btn = pygame.draw.rect(screen, roland_red, [1150, HEIGHT - 150, 200, 100], 0, 5)
+    reverb_text = label_font2.render('Filter2', True, roland_yellow)
+    screen.blit(reverb_text, (1200, HEIGHT - 130))
     if filtering:
         filtering2_opt = medium_font.render('On', True, dark_gray)
     else:
@@ -341,27 +390,27 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-        # Music pad buttons pressed
+        # Click Music pad buttons
         if event.type == pygame.MOUSEBUTTONDOWN:
             for i in range(len(music_pads)):
                 if music_pads[i][0].collidepoint(event.pos):
                     pad_location = music_pads[i][1]
                     # Select a box by making it positive, unselect it by making it negative
                     clicked[pad_location[1]][pad_location[0]] *= -1
-        # Menu buttons pressed
+        # Click Menu button
         if event.type == pygame.MOUSEBUTTONUP:
-            # Play/Pause button
+            # Click Play/Pause button
             if play_pause.collidepoint(event.pos):
                 if playing:
                     playing = False
                 elif not playing:
                     playing = True
-            # BPM add/sub button pressed (default = 240)
+            # Click BPM add/sub button (default = 240)
             elif bpm_add_rect.collidepoint(event.pos):
                 BPM += 10
             elif bpm_sub_rect.collidepoint(event.pos):
                 BPM -= 10
-            # Beats add/sub button pressed (default = 8)
+            # Click Beats add/sub button (default = 8)
             elif beats_add_rect.collidepoint(event.pos):
                 BEATS += 1
                 for i in range(len(clicked)):
@@ -370,31 +419,52 @@ while run:
                 BEATS -= 1
                 for i in range(len(clicked)):
                     clicked[i].pop(-1)  # Remove right-most column of pads
-            # Filter button pressed
-            elif filter_rect.collidepoint(event.pos):
+            # Click Square Wave button
+            elif sq_wave_btn.collidepoint(event.pos):
+                # print(f"sq_wave_btn clicked i -> {i}")
+                if filtering:  # Square wave button Off
+                    # Set all default instruments to non-filtered sound
+                    set_def_inst()
+                    # Set recorded audio to non-filtered if enabled
+                    # if REC1 is True:
+                    #     set_def_rec(1)
+                    #     REC1 = False
+                    filtering = False
+                elif not filtering:  # Square wave button On
+                    # Filter all default instruments with square wave filter
+                    set_sqrwave_inst()
+                    # Filter recorded audio if enabled
+                    # if REC1:
+                    #     set_sqrwave_rec(1)
+                    #     REC1 = False
+                    filtering = True
+            # Click Reverb button
+            elif reverb_btn.collidepoint(event.pos):
                 if filtering:
+                    # Filter recorded audio if enabled
+                    # if REC1:
+                    #     set_reverb_rec(i)
+                    # Set all default instruments to non-reverb sound
                     set_def_inst()
                     filtering = False
                 elif not filtering:
-                    set_filtered_inst()
+                    # Set all default instruments to reverb sound
+                    set_reverb_inst()
                     filtering = True
 
             ''' ~ Instrument button pressed ~ '''
             for i in range(len(instrument_rects)):
                 # Instrument has been recorded over
                 if instrument_rects[i].collidepoint(event.pos):
+                    # if i == 0:  # hit 1st instrument box
+                    #     REC1 = True
                     active_instruments[i] *= -1  # turn on/off
                     # If instrument clicked, record new sound and use instead
                     if active_instruments[i] == -1:  # 1 -> def. instr. -1 -> rec. instr.
+                        if i == 0:  # if instrument is inst 1
+                            REC1 = True
+
                         rec_new_sound(i)
-                        # if i == 0:
-                        #     if not filtering:
-                        #         REC1 = True
-                        #         REC1_FILT = False
-                        #     if filtering:
-                        #         REC1_FILT = True
-                        #         REC1 = False
-                        print("Instrument button pressed, change_notes()")
                     # Instrument is not a recording
                     else:
                         if i == 0:
