@@ -36,7 +36,7 @@ medium_font = pygame.font.Font("freesansbold.ttf", 22)
 
 FPS = 60
 SAMPLERATE = 48000
-DURATION = 1
+DURATION = 0.6
 TIMER = pygame.time.Clock()
 BEATS = 8
 BPM = 240
@@ -57,9 +57,6 @@ INST_DEF4_NAME = 'Cowbell'
 INST_DEF5_NAME = 'Clap'
 INST_DEF6_NAME = 'Conga'
 
-# Default instrument recording file names to be used if necessary
-# INST1_REC = 'audio1.wav'
-#
 # REC1 = False  # Recording for instrument 1 exists
 # REC1_FILT = False  # Recording for instrument 1 pos. is filtered
 
@@ -155,6 +152,7 @@ def set_sqrwave_inst():
         INSTRUMENTS[i] = mixer.Sound(new_inst)
 
 
+# TO-DO
 # Set filtered sounds for recorded audio
 def set_sqrwave_rec(i):
     inst = ''
@@ -179,6 +177,7 @@ def set_sqrwave_rec(i):
     INSTRUMENTS[i] = mixer.Sound(new_inst)
 
 
+# TO-DO
 def set_reverb_rec(rec_num):
     pass
 
@@ -290,7 +289,7 @@ def draw_grid(clicks, beat, active_inst):
                 color = gray
             else:
                 color = silver_blue
-            rect = pygame.draw.rect(screen, color, [i * ((WIDTH - 200) // BEATS) + 205, (j * 100) + 5,
+            mus_pad = pygame.draw.rect(screen, color, [i * ((WIDTH - 200) // BEATS) + 205, (j * 100) + 5,
                                                     ((WIDTH - 200) // BEATS) - 10,
                                                     ((HEIGHT - 200) // NUM_INST) - 10], 0, 5)
             pygame.draw.rect(screen, silver_blue, [i * ((WIDTH - 200) // BEATS) + 200, (j * 100), ((WIDTH - 200) // BEATS),
@@ -298,7 +297,7 @@ def draw_grid(clicks, beat, active_inst):
             pygame.draw.rect(screen, black, [i * ((WIDTH - 200) // BEATS) + 200, (j * 100), ((WIDTH - 200) // BEATS),
                                              ((HEIGHT - 200) // NUM_INST)], 2, 5)
 
-            music_pad_grid.append((rect, (i, j)))  # Return rectangle for each beat & coordinate for collision detection
+            music_pad_grid.append((mus_pad, (i, j)))  # Return rectangle for each beat & coordinate for collision detection
 
             # Highlight current beat
             active_col = pygame.draw.rect(screen, roland_yellow, [beat * ((WIDTH - 200) // BEATS) + 200, 0,
@@ -309,7 +308,8 @@ def draw_grid(clicks, beat, active_inst):
 # Main game loop modifiers
 playing = True
 beat_changed = True
-filtering = False
+sqr_filter = False
+rev_filter = False
 active_beat = 1
 active_length = 0
 
@@ -360,16 +360,16 @@ while run:
     sq_wave_btn = pygame.draw.rect(screen, roland_red, [900, HEIGHT - 150, 200, 100], 0, 5)
     sq_wave_text = label_font2.render('Square Wave', True, roland_yellow)
     screen.blit(sq_wave_text, (910, HEIGHT - 130))
-    if filtering:
+    if sqr_filter:
         filtering_opt = medium_font.render('On', True, dark_gray)
     else:
         filtering_opt = medium_font.render('Off', True, dark_gray)
     screen.blit(filtering_opt, (980, HEIGHT - 90))
     # Draw Filter2 button
     reverb_btn = pygame.draw.rect(screen, roland_red, [1150, HEIGHT - 150, 200, 100], 0, 5)
-    reverb_text = label_font2.render('Filter2', True, roland_yellow)
+    reverb_text = label_font2.render('Reverb', True, roland_yellow)
     screen.blit(reverb_text, (1200, HEIGHT - 130))
-    if filtering:
+    if rev_filter:
         filtering2_opt = medium_font.render('On', True, dark_gray)
     else:
         filtering2_opt = medium_font.render('Off', True, dark_gray)
@@ -422,35 +422,35 @@ while run:
             # Click Square Wave button
             elif sq_wave_btn.collidepoint(event.pos):
                 # print(f"sq_wave_btn clicked i -> {i}")
-                if filtering:  # Square wave button Off
+                if sqr_filter:  # Square wave button Off
                     # Set all default instruments to non-filtered sound
                     set_def_inst()
                     # Set recorded audio to non-filtered if enabled
                     # if REC1 is True:
                     #     set_def_rec(1)
                     #     REC1 = False
-                    filtering = False
-                elif not filtering:  # Square wave button On
+                    sqr_filter = False
+                elif not sqr_filter:  # Square wave button On
                     # Filter all default instruments with square wave filter
                     set_sqrwave_inst()
                     # Filter recorded audio if enabled
                     # if REC1:
                     #     set_sqrwave_rec(1)
                     #     REC1 = False
-                    filtering = True
+                    sqr_filter = True
             # Click Reverb button
             elif reverb_btn.collidepoint(event.pos):
-                if filtering:
+                if rev_filter:  # Reverb button Off
                     # Filter recorded audio if enabled
                     # if REC1:
                     #     set_reverb_rec(i)
                     # Set all default instruments to non-reverb sound
                     set_def_inst()
-                    filtering = False
-                elif not filtering:
+                    rev_filter = False
+                elif not rev_filter:  # Reverb button On
                     # Set all default instruments to reverb sound
                     set_reverb_inst()
-                    filtering = True
+                    rev_filter = True
 
             ''' ~ Instrument button pressed ~ '''
             for i in range(len(instrument_rects)):
