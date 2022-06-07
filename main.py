@@ -1,10 +1,8 @@
 # Yuriy Alexander
 # CS410 Computers, Sound & Music
 # Final Project
-import io
-import wave
+# Project demo: https://www.youtube.com/watch?v=duexxwhxclM
 
-import simpleaudio as sa
 import sounddevice as sd
 from scipy.io import wavfile
 import pygame
@@ -24,7 +22,6 @@ green = (0, 255, 0)
 gold = (212, 175, 55)
 blue = (0, 255, 255)
 silver_blue = (220, 239, 239)
-
 roland_red = (245, 63, 7)
 roland_yellow = (242, 240, 167)
 
@@ -56,9 +53,6 @@ INST_DEF3_NAME = 'Kick'
 INST_DEF4_NAME = 'Cowbell'
 INST_DEF5_NAME = 'Clap'
 INST_DEF6_NAME = 'Conga'
-
-# REC1 = False  # Recording for instrument 1 exists
-# REC1_FILT = False  # Recording for instrument 1 pos. is filtered
 
 pygame.mixer.set_num_channels(NUM_INST * 3)  # Add more usable channels to avoid interference
 
@@ -114,8 +108,8 @@ def set_reverb_inst():
 
         fs, audio = wavfile.read(inst)
 
-        echo_dur = 0.15
-        delay_amp = 0.2
+        echo_dur = 0.4
+        delay_amp = 0.15
         delay_samples = round(echo_dur * fs)
         zero_padding = np.zeros(delay_samples)
 
@@ -146,7 +140,7 @@ def set_sqrwave_inst():
 
         fs, audio = wavfile.read(inst)
         filtered_audio = audio.astype(np.int16)
-        filtered_audio = np.clip(filtered_audio, a_min=-4000, a_max=4000)
+        filtered_audio = np.clip(filtered_audio, a_min=-2000, a_max=2000)
         new_inst = inst.replace('.wav', '-filt.wav').replace('sounds/', '')
         wavfile.write(new_inst, fs, filtered_audio)
         INSTRUMENTS[i] = mixer.Sound(new_inst)
@@ -171,7 +165,7 @@ def set_sqrwave_rec(i):
 
     fs, audio = wavfile.read(inst)
     filtered_audio = audio.astype(np.int16)
-    filtered_audio = np.clip(filtered_audio, a_min=-4000, a_max=4000)
+    filtered_audio = np.clip(filtered_audio, a_min=-8192, a_max=8192)
     new_inst = inst.replace('.wav', '-filt.wav')
     wavfile.write(new_inst, fs, filtered_audio)
     INSTRUMENTS[i] = mixer.Sound(new_inst)

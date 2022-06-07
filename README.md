@@ -73,4 +73,8 @@ https://www.pygame.org/docs/
 
 https://github.com/pdx-cs-sound
 
+https://hiphopmakers.com/category/free-music-samples
+
+https://www.musicradar.com/news/sampleradar-216-free-jazz-keys-samples
+
 </p>
